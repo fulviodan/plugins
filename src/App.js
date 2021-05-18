@@ -1,23 +1,50 @@
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import React, { useEffect } from "react";
+import { useCompositeState } from "./hooks/state";
+import { Box } from "@chakra-ui/layout";
+import { Flex } from "@chakra-ui/layout";
+import { Stack } from "@chakra-ui/layout";
+
+const plugins = ["A", "Altroplugin", "Reset"];
 
 function App() {
+  const state = useCompositeState({ modules: [] });
+  const pluginState = useCompositeState({ number: 0 });
+
+  useEffect(() => {
+    Promise.all(
+      plugins.map(async (el) => {
+        const m = await import(`./plugins/${el}`);
+        console.log("Ext", m.extensions);
+        return {
+          component: m.default,
+          extensions: m.extensions || [],
+          name: el,
+        };
+      })
+    ).then((result) => {
+      console.log(result);
+
+      state.modules = result;
+    });
+  }, []);
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <Box>
+        <Box>{pluginState.number}</Box>
+        {state.modules.map((el, i) => (
+          <Stack direction="column" key={i}>
+            <Box>{el.name}</Box>
+            <Box>
+              Estensioni
+              {JSON.stringify(el.extensions)}
+            </Box>
+            <Box>
+              {React.createElement(el.component, { state: pluginState })}
+            </Box>
+          </Stack>
+        ))}
+      </Box>
     </div>
   );
 }
